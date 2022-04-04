@@ -2,16 +2,71 @@ import streamlit as st
 import requests as rq
 import datetime as dt
 import geocoder
-from geopy.geocoders import Nominatim
 
+# functions below
+
+
+def k2c(k):
+    return k - 273.15
+
+
+def c2f(c):
+    return c * 1.8 + 32
+
+
+def m2mi(m):
+    return m / 1609.344
+
+
+def ms2mph(ms):
+    return 3600 * m2mi(ms)
+
+
+# streamlit structure below
+pageTitle = "Weather"
+st.set_page_config(
+    page_title=pageTitle,
+    menu_items={
+        "About": "HCI Project 2"
+    }
+)
+
+st.title(pageTitle)
 # lat lon from ip
-g = geocoder.ip('me')
+g = geocoder.ipinfo('me')
 lat = g.latlng[0]
 lon = g.latlng[1]
+city = g.city
 
-# nearest city to ip
-geolocator = Nominatim(user_agent="Project2-HCI")
-city = geolocator.reverse(str(lat) + ", " + str(lon)).raw["address"]["city"]
+st.info("Based on your IP address, you are in or near " + city + ".")
+citySearchInput = st.text_input("Search for a city:")
+if citySearchInput:
+    citySearchURL = "https://nominatim.openstreetmap.org/search?city=" + citySearchInput + "&format=json"
+    citySearchResponse = rq.get(citySearchURL).json()
+    cityOptions = []
+    for item in citySearchResponse:
+        if item["display_name"] not in cityOptions:
+            cityOptions.append(item["display_name"])
+    # cityOptions = list(set(cityOptions))
+    selectedCity = st.selectbox(str(len(cityOptions)) + " results for " + citySearchInput, cityOptions)
+    selectedLat = 0.
+    selectedLon = 0.
+    for item in citySearchResponse:
+        if item["display_name"] == selectedCity:
+            selectedLat = item["lat"]
+            selectedLon = item["lon"]
+            break
+    city = selectedCity
+    lat = selectedLat
+    lon = selectedLon
+
+cityShortName = ""
+for i in range(len(city)):
+    if city[i] != ',':
+        cityShortName += city[i]
+        continue
+    break
+st.header("Statistics for " + cityShortName)
 
 # get response from openWeatherMap api
 apiKey = "f2753510aec1cb9ef2f826c3edd452ad"
@@ -61,39 +116,6 @@ else:
     currentWindDirStr = "NW"
 
 currentWeatherStr = response["current"]["weather"][0]["description"]
-
-# functions below
-
-
-def k2c(k):
-    return k - 273.15
-
-
-def c2f(c):
-    return c * 1.8 + 32
-
-
-def m2mi(m):
-    return m / 1609.344
-
-
-def ms2mph(ms):
-    return 3600 * m2mi(ms)
-
-
-# streamlit structure below
-pageTitle = "Weather"
-st.set_page_config(
-    page_title=pageTitle,
-    menu_items={
-        "About": "HCI Project 2"
-    }
-)
-
-st.title(pageTitle)
-
-st.info("Based on your IP address, you are in or near " + city + ".")
-st.header("Statistics for " + city)
 
 temperatureUnit = st.selectbox("Select a unit of temperature", ["Fahrenheit", "Celsius"])
 
