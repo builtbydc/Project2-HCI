@@ -193,15 +193,16 @@ if seeUVI:
 
         fig, ax = plt.subplots()
 
-        ax.bar(UVILabel, 10, UVIWidth, bottom=11, label='Extreme', color="#B94375")
-        ax.bar(UVILabel, 3, UVIWidth, bottom=8, label='Very High', color="#C73734")
-        ax.bar(UVILabel, 2, UVIWidth, bottom=6, label='High', color="#E09945")
-        ax.bar(UVILabel, 3, UVIWidth, bottom=3, label='Moderate', color="#F9DC4F")
-        ax.bar(UVILabel, 3, UVIWidth, bottom=0, label='Low', color="#8DBF89")
+        ax.bar(UVILabel, 9.9, UVIWidth, bottom=11, label='Extreme', color="#B94375")
+        ax.bar(UVILabel, 2.9, UVIWidth, bottom=8, label='Very High', color="#C73734")
+        ax.bar(UVILabel, 1.9, UVIWidth, bottom=6, label='High', color="#E09945")
+        ax.bar(UVILabel, 2.9, UVIWidth, bottom=3, label='Moderate', color="#F9DC4F")
+        ax.bar(UVILabel, 2.9, UVIWidth, bottom=0, label='Low', color="#8DBF89")
         ax.plot(0.5, currentUVI, "k*", markersize=20)
 
-        ax.set_title("UV Index")
+        ax.set_title("UV Index", fontsize=20)
         ax.set_yticks(UVIYTicks)
+        plt.yticks(fontsize=12)
         ax.set_xticks([])
         ax.spines["top"].set_visible(False)
         ax.spines["left"].set_visible(False)
@@ -209,7 +210,7 @@ if seeUVI:
         ax.spines["bottom"].set_visible(False)
         plt.xlim(0, 1)
         plt.ylim(0, 15)
-        ax.legend()
+        ax.legend(fontsize=12)
         st.pyplot(fig)
 
         if currentUVI < 3:
@@ -224,9 +225,9 @@ if seeUVI:
             currentUVIStr = "extreme"
 
     with c2:
-        st.write("###")
+        st.write("##")
         st.info("The UV Index in this area is **" + currentUVIStr + "** (" + str(currentUVI) + ").")
-        link = '[Find out more about the UV Index.](https://www.epa.gov/sites/default/files/documents/uviguide.pdf)'
+        link = '[Find out more.](https://www.epa.gov/sites/default/files/documents/uviguide.pdf)'
         st.markdown(link, unsafe_allow_html=True)
 
 st.write("Wind Speed: " + currentWindSpeedStr)
