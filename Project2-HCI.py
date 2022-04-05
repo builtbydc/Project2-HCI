@@ -23,7 +23,7 @@ def ms2mph(ms):
 
 
 # streamlit structure below
-pageTitle = "Weather"
+pageTitle = "Current Weather Info"
 st.set_page_config(
     page_title=pageTitle,
     menu_items={
@@ -32,34 +32,50 @@ st.set_page_config(
 )
 
 st.title(pageTitle)
-# lat lon from ip
-g = geocoder.ipinfo('me')
-lat = g.latlng[0]
-lon = g.latlng[1]
-city = g.city
 
-st.info("Based on your IP address, you are in or near " + city + ".")
+# search or get city from ip
 citySearchInput = st.text_input("Search for a city:")
 if citySearchInput:
     citySearchURL = "https://nominatim.openstreetmap.org/search?city=" + citySearchInput + "&format=json"
     citySearchResponse = rq.get(citySearchURL).json()
-    cityOptions = []
-    for item in citySearchResponse:
-        if item["display_name"] not in cityOptions:
-            cityOptions.append(item["display_name"])
-    # cityOptions = list(set(cityOptions))
-    selectedCity = st.selectbox(str(len(cityOptions)) + " results for " + citySearchInput, cityOptions)
-    selectedLat = 0.
-    selectedLon = 0.
-    for item in citySearchResponse:
-        if item["display_name"] == selectedCity:
-            selectedLat = item["lat"]
-            selectedLon = item["lon"]
-            break
-    city = selectedCity
-    lat = selectedLat
-    lon = selectedLon
+    if len(citySearchResponse) > 0:
+        cityOptions = []
+        for item in citySearchResponse:
+            if item["display_name"] not in cityOptions:
+                cityOptions.append(item["display_name"])
+        # cityOptions = list(set(cityOptions))
+        noOfCityOptions = len(cityOptions)
+        if noOfCityOptions > 1:
+            selectedCity = st.selectbox(str(noOfCityOptions) + " results for \"" + citySearchInput + "\"", cityOptions)
+        else:
+            selectedCity = st.selectbox("1 result for \"" + citySearchInput + "\"", cityOptions)
+        selectedLat = 0.
+        selectedLon = 0.
+        for item in citySearchResponse:
+            if item["display_name"] == selectedCity:
+                selectedLat = item["lat"]
+                selectedLon = item["lon"]
+                break
+        city = selectedCity
+        lat = selectedLat
+        lon = selectedLon
+    else:
+        st.error("Your search for \"" + citySearchInput + "\" returned 0 results. Try another city.")
+        # lat lon from ip
+        g = geocoder.ipinfo('me')
+        lat = g.latlng[0]
+        lon = g.latlng[1]
+        city = g.city
+        st.info("Based on your IP address, you are in or near " + city + ".")
+else:
+    # lat lon from ip
+    g = geocoder.ipinfo('me')
+    lat = g.latlng[0]
+    lon = g.latlng[1]
+    city = g.city
+    st.info("Based on your IP address, you are in or near " + city + ".")
 
+# header
 cityShortName = ""
 for i in range(len(city)):
     if city[i] != ',':
@@ -117,6 +133,7 @@ else:
 
 currentWeatherStr = response["current"]["weather"][0]["description"]
 
+# selectbox
 temperatureUnit = st.selectbox("Select a unit of temperature", ["Fahrenheit", "Celsius"])
 
 # convert to selected unit and build strings
@@ -145,6 +162,9 @@ else:
     currentWindSpeedStr = str(int(10*currentWindSpeed) / 10) + " m/s"
 
 currentWindSpeedStr += " " + currentWindDirStr
+
+# TODO: get hourly forecast from response
+
 # all info should be available now, the rest of the app is below
 
 # display all possible information
