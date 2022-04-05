@@ -2,6 +2,8 @@ import streamlit as st
 import requests as rq
 import datetime as dt
 import geocoder
+from matplotlib import pyplot as plt
+from bokeh.models.widgets import Div
 
 # functions below
 
@@ -181,7 +183,51 @@ st.write("Pressure: " + currentPressureStr)
 st.write("Clouds: " + currentCloudsStr)
 st.write("Humidity: " + currentHumidityStr)
 
-st.write("UV Index: " + currentUVIStr)
+seeUVI = st.checkbox("See UV Index information.")
+if seeUVI:
+    c1, c2 = st.columns([2, 1])
+    with c1:
+        UVILabel = [""]
+        UVIWidth = 2
+        UVIYTicks = [0, 3, 6, 8, 11]
+
+        fig, ax = plt.subplots()
+
+        ax.bar(UVILabel, 10, UVIWidth, bottom=11, label='Extreme', color="#B94375")
+        ax.bar(UVILabel, 3, UVIWidth, bottom=8, label='Very High', color="#C73734")
+        ax.bar(UVILabel, 2, UVIWidth, bottom=6, label='High', color="#E09945")
+        ax.bar(UVILabel, 3, UVIWidth, bottom=3, label='Moderate', color="#F9DC4F")
+        ax.bar(UVILabel, 3, UVIWidth, bottom=0, label='Low', color="#8DBF89")
+        ax.plot(0.5, currentUVI, "k*", markersize=20)
+
+        ax.set_title("UV Index")
+        ax.set_yticks(UVIYTicks)
+        ax.set_xticks([])
+        ax.spines["top"].set_visible(False)
+        ax.spines["left"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["bottom"].set_visible(False)
+        plt.xlim(0, 1)
+        plt.ylim(0, 15)
+        ax.legend()
+        st.pyplot(fig)
+
+        if currentUVI < 3:
+            currentUVIStr = "low"
+        elif currentUVI < 6:
+            currentUVIStr = "moderate"
+        elif currentUVI < 8:
+            currentUVIStr = "high"
+        elif currentUVI < 11:
+            currentUVIStr = "very high"
+        else:
+            currentUVIStr = "extreme"
+
+    with c2:
+        st.write("###")
+        st.info("The UV Index in this area is **" + currentUVIStr + "** (" + str(currentUVI) + ").")
+        link = '[Find out more about the UV Index.](https://www.epa.gov/sites/default/files/documents/uviguide.pdf)'
+        st.markdown(link, unsafe_allow_html=True)
 
 st.write("Wind Speed: " + currentWindSpeedStr)
 st.write("Visibility: " + currentVisibilityStr)
