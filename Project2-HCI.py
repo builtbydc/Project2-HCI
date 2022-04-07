@@ -1,3 +1,5 @@
+from time import strftime
+
 import streamlit as st
 import requests as rq
 import datetime as dt
@@ -88,9 +90,16 @@ with c2:
     response = rq.get(apiURL).json()
 
     #parse response
-    currentDateTime = dt.datetime.fromtimestamp(response["current"]["dt"])
-    sunriseToday = dt.datetime.fromtimestamp(response["current"]["sunrise"])
-    sunsetToday = dt.datetime.fromtimestamp(response["current"]["sunset"])
+    utcTime = dt.datetime.utcnow()
+    systemTime = dt.datetime.now()
+    myOffset = systemTime.timestamp() - utcTime.timestamp()
+
+    currentDateTime = dt.datetime.fromtimestamp(response["current"]["dt"] - myOffset + response["timezone_offset"])
+    currentDateTimeStr = currentDateTime.strftime("%I:%M %p")
+    sunriseToday = dt.datetime.fromtimestamp(response["current"]["sunrise"] - myOffset + response["timezone_offset"])
+    sunriseTodayStr = sunriseToday.strftime("%I:%M %p")
+    sunsetToday = dt.datetime.fromtimestamp(response["current"]["sunset"] - myOffset + response["timezone_offset"])
+    sunsetTodayStr = sunsetToday.strftime("%I:%M %p")
 
     currentTempKelvin = response["current"]["temp"]
     currentFeelsLikeKelvin = response["current"]["feels_like"]
@@ -226,6 +235,9 @@ with c1:
             .small-font {
                 font-size:3rem !important;
             }
+            .little-font {
+                font-size:
+            }
             .my {
             line-height:1.1;
             }
@@ -240,6 +252,10 @@ with c1:
             <span style='display:flex; align-items:center; margin:0; padding:0;'>
                 <p style='display: inline; margin:0; padding:0;' class='big-font'>""" + currentTempStr + """</p>
                 <img style='display: inline; margin:0; padding:0; width: 8rem; height: 8rem;' src='""" + iconSource + """' width='0' height='0'>
+                <div style='height:100%; width:100%;'>
+                    <p class='small-font'>""" + currentDateTimeStr + """</p>
+                    <p class='small-font'>12:59PM</p>
+                </div>
             </span>
             <p style='margin:0; padding:0;' class='small-font'><i>""" + currentWeatherStr + """</i></p>
             <p style='margin:0; padding:0;' class='small-font'>Feels like """ + currentFeelsLikeStr + """</p>
