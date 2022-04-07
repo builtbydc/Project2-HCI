@@ -93,12 +93,13 @@ with c2:
     utcTime = dt.datetime.utcnow()
     systemTime = dt.datetime.now()
     myOffset = systemTime.timestamp() - utcTime.timestamp()
+    realOffset = response["timezone_offset"] - myOffset
 
-    currentDateTime = dt.datetime.fromtimestamp(response["current"]["dt"] - myOffset + response["timezone_offset"])
+    currentDateTime = dt.datetime.fromtimestamp(response["current"]["dt"] + realOffset)
     currentDateTimeStr = currentDateTime.strftime("%I:%M %p")
-    sunriseToday = dt.datetime.fromtimestamp(response["current"]["sunrise"] - myOffset + response["timezone_offset"])
+    sunriseToday = dt.datetime.fromtimestamp(response["current"]["sunrise"] + realOffset)
     sunriseTodayStr = sunriseToday.strftime("%I:%M %p")
-    sunsetToday = dt.datetime.fromtimestamp(response["current"]["sunset"] - myOffset + response["timezone_offset"])
+    sunsetToday = dt.datetime.fromtimestamp(response["current"]["sunset"] + realOffset)
     sunsetTodayStr = sunsetToday.strftime("%I:%M %p")
 
     currentTempKelvin = response["current"]["temp"]
@@ -236,7 +237,7 @@ with c1:
                 font-size:3rem !important;
             }
             .little-font {
-                font-size:
+                font-size: 1.5rem !important;
             }
             .my {
             line-height:1.1;
@@ -253,13 +254,16 @@ with c1:
                 <p style='display: inline; margin:0; padding:0;' class='big-font'>""" + currentTempStr + """</p>
                 <img style='display: inline; margin:0; padding:0; width: 8rem; height: 8rem;' src='""" + iconSource + """' width='0' height='0'>
                 <div style='height:100%; width:100%;'>
-                    <p class='small-font'>""" + currentDateTimeStr + """</p>
-                    <p class='small-font'>12:59PM</p>
+                    <p style='text-align: right;' class='small-font'>""" + currentDateTimeStr + """</p>
+                    <p style='text-align: right;' class='little-font'>
+                        Sunrise: """ + sunriseTodayStr + """</p>
+                    <p style='text-align: right;' class='little-font'>
+                        Sunset: """ + sunsetTodayStr + """
+                    </p>
                 </div>
             </span>
+            <p style='margin:0; padding:0;' class='little-font'>Feels like """ + currentFeelsLikeStr + """</p>
             <p style='margin:0; padding:0;' class='small-font'><i>""" + currentWeatherStr + """</i></p>
-            <p style='margin:0; padding:0;' class='small-font'>Feels like """ + currentFeelsLikeStr + """</p>
-            <p style='margin:0; padding:0;' class='small-font'>Humidity: """ + currentHumidityStr + """</p>
         </div>
         """, unsafe_allow_html=True)
 
