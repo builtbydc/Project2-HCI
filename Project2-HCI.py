@@ -1,11 +1,14 @@
 from time import strftime
 
+import numpy as np
 import streamlit as st
 import requests as rq
 import datetime as dt
 import geocoder
 from matplotlib import pyplot as plt
 from bokeh.models.widgets import Div
+from streamlit_folium import folium_static
+import folium
 
 # functions below
 
@@ -26,6 +29,18 @@ def ms2mph(ms):
     return 3600 * m2mi(ms)
 
 
+def map_creator(latitude, longitude):
+
+    # center on the station
+    m = folium.Map(location=[latitude, longitude], zoom_start=5, min_zoom=3)
+
+    # add marker for the station
+    folium.Marker([latitude, longitude], popup="Station", tooltip="Station").add_to(m)
+
+    # call to render Folium map in Streamlit
+    folium_static(m)
+
+
 # streamlit structure below
 pageTitle = "Current Weather Info"
 st.set_page_config(
@@ -39,10 +54,11 @@ c1, c2 = st.columns([2, 1])
 response = {}
 
 with c2:
+
+    color = st.color_picker("Theme color", "#48cae4")
+    st.write("##")
+
     # search or get city from ip
-    st.write("#")
-    st.write("###")
-    st.write("###")
     citySearchInput = st.text_input("Search for a city:")
     if citySearchInput:
         citySearchURL = "https://nominatim.openstreetmap.org/search?city=" + citySearchInput + "&format=json"
@@ -142,7 +158,7 @@ with c2:
     currentWeatherStr = response["current"]["weather"][0]["description"]
 
     # selectbox
-    temperatureUnit = st.selectbox("Select a unit of temperature", ["Fahrenheit", "Celsius"])
+    temperatureUnit = st.radio("Select a unit of temperature", ["Fahrenheit", "Celsius"])
 
     # convert to selected unit and build strings
     currentTemp = k2c(currentTempKelvin)
@@ -198,20 +214,59 @@ with c2:
         UVIax.plot(0.5, currentUVI, "k*", markersize=20)
 
         UVIax.set_title("UV Index", fontsize=20)
-        UVIax.set_yticks(UVIYTicks)
-        plt.yticks(fontsize=12)
+        UVIax.set_yticks(UVIYTicks, fontsize=12)
         UVIax.set_xticks([])
         UVIax.spines["top"].set_visible(False)
         UVIax.spines["left"].set_visible(False)
         UVIax.spines["right"].set_visible(False)
         UVIax.spines["bottom"].set_visible(False)
-        plt.xlim(0, 1)
-        plt.ylim(0, 15)
+        UVIax.set_xlim(0, 1)
+        UVIax.set_ylim(0, 15)
         UVIax.legend(fontsize=12)
         st.pyplot(UVIfig)
 
         link = '[Find out more.](https://www.epa.gov/sites/default/files/documents/uviguide.pdf)'
         st.markdown(link, unsafe_allow_html=True)
+
+    seePressure = st.checkbox("See pressure information")
+    if seePressure:
+        if (currentPressure > 1010) & (currentPressure < 1016):
+            st.info("The current pressure is " + currentPressureStr + ". This is normal.")
+        elif currentPressure >= 1016:
+            st.info("The current pressure is " + currentPressureStr + ". This is high.")
+        else:
+            st.info("The current pressure is " + currentPressureStr + ". This is low.")
+
+        pressFig, pressAx = plt.subplots()
+        pressFig.set_size_inches(1, 4)
+
+        pressAx.set_xlim(0, 1)
+        pressAx.set_ylim(980, 1030)
+
+        pressAx.set_xticks([])
+
+        pressX = [0, 1]
+        pressY = [1013, 1013]
+
+        cX = pressX
+        cY = [currentPressure, currentPressure]
+
+        pressAx.plot(pressX, pressY, "g--")
+        pressAx.plot(cX, cY, "r")
+
+        pressAx.legend(["Normal\nPressure", "Current\nPressure"], bbox_to_anchor=(0.48, 1.3), loc="upper center",
+                       fontsize=14, ncol=4)
+        st.pyplot(pressFig)
+
+    moreDetails = st.button("Detailed weather information")
+    if moreDetails:
+        st.write("Dew Point: " + currentDewPointStr)
+
+        st.write("Clouds: " + currentCloudsStr)
+        st.write("Humidity: " + currentHumidityStr)
+
+        st.write("Wind Speed: " + currentWindSpeedStr)
+        st.write("Visibility: " + currentVisibilityStr)
 
 # TODO: get hourly forecast from response
 
@@ -249,10 +304,16 @@ with c1:
     iconSource = "http://openweathermap.org/img/wn/" + icon + "@2x.png"
 
     st.markdown("""
-        <div class='my' style='background:lightblue; padding:1rem; margin-bottom:1rem; border-radius:1rem'>
+        <div class='my' style='background:""" + color + """; padding:1rem; margin-bottom:1rem; border-radius:1rem'>
             <span style='display:flex; align-items:center; margin:0; padding:0;'>
-                <p style='display: inline; margin:0; padding:0;' class='big-font'>""" + currentTempStr + """</p>
-                <img style='display: inline; margin:0; padding:0; width: 8rem; height: 8rem;' src='""" + iconSource + """' width='0' height='0'>
+                <div>
+                    <span style='display:flex; align-items:center; margin:0; padding:0;'>
+                        <p style='display: inline; margin:0; padding:0;' class='big-font'>""" + currentTempStr + """</p>
+                        <img style='display: inline; margin:0; padding:0; width: 8rem; height: 8rem;' src='""" + iconSource + """' width='0' height='0'>
+                    </span>
+                    <p style='margin:0; padding:0;' class='little-font'>Feels like """ + currentFeelsLikeStr + """</p>
+                    <p style='margin:0; padding:0;' class='small-font'><i>""" + currentWeatherStr + """</i></p>
+                </div>
                 <div style='height:100%; width:100%;'>
                     <p style='text-align: right;' class='small-font'>""" + currentDateTimeStr + """</p>
                     <p style='text-align: right;' class='little-font'>
@@ -260,28 +321,18 @@ with c1:
                     <p style='text-align: right;' class='little-font'>
                         Sunset: """ + sunsetTodayStr + """
                     </p>
+                    <p style='text-align: right;' class='little-font'>
+                        ▙▞▚▞▚▞▚▞▚▞▚▟
+                    </p>
+                    <p style='text-align: right;' class='little-font'>
+                        Humidity: """ + currentHumidityStr + """
+                    </p>
+                    <p style='text-align: right;' class='little-font'>
+                        Wind: """ + currentWindSpeedStr + """
+                    </p>
                 </div>
             </span>
-            <p style='margin:0; padding:0;' class='little-font'>Feels like """ + currentFeelsLikeStr + """</p>
-            <p style='margin:0; padding:0;' class='small-font'><i>""" + currentWeatherStr + """</i></p>
         </div>
         """, unsafe_allow_html=True)
 
-    st.write("Current Time: " + str(currentDateTime))
-    st.write("Sunrise Today: " + str(sunriseToday))
-    st.write("Sunset Today: " + str(sunsetToday))
-
-    st.write("Current Temperature: " + currentTempStr)
-    st.write("Feels Like: " + currentFeelsLikeStr)
-    st.write("Dew Point: " + currentDewPointStr)
-
-    st.write("Pressure: " + currentPressureStr)
-
-    st.write("Clouds: " + currentCloudsStr)
-    st.write("Humidity: " + currentHumidityStr)
-
-    st.write("Wind Speed: " + currentWindSpeedStr)
-    st.write("Visibility: " + currentVisibilityStr)
-
-    st.write("Weather Description: " + currentWeatherStr)
-
+    map_creator(lat, lon)
