@@ -1,6 +1,7 @@
 from time import strftime
 
 import numpy as np
+import pandas as pd
 import streamlit as st
 import requests as rq
 import datetime as dt
@@ -261,11 +262,7 @@ with c2:
     moreDetails = st.button("Detailed weather information")
     if moreDetails:
         st.write("Dew Point: " + currentDewPointStr)
-
-        st.write("Clouds: " + currentCloudsStr)
-        st.write("Humidity: " + currentHumidityStr)
-
-        st.write("Wind Speed: " + currentWindSpeedStr)
+        st.write("Cloud Cover: " + currentCloudsStr)
         st.write("Visibility: " + currentVisibilityStr)
 
 # TODO: get hourly forecast from response
@@ -335,4 +332,39 @@ with c1:
         </div>
         """, unsafe_allow_html=True)
 
+    hourlyForecast = st.checkbox("Get hourly forecast.")
+    if hourlyForecast:
+        currentHour = dt.time(int(currentDateTime.strftime("%H")), 00)
+        hourly = st.slider("Select a range for the hourly forecast.",
+                           min_value=currentHour,
+                           max_value=dt.time(23, 00),
+                           value=(currentHour, dt.time(min(currentHour.hour + 12, 23), 00)))
+
+        st.write("You have selected the hours of", hourly[0].strftime("%I:%M %p"), "to", hourly[1].strftime("%I:%M %p"))
+
+        a = int(hourly[0].strftime("%H"))
+        b = int(hourly[1].strftime("%H"))
+        diff = b-a
+
+        data = {}
+        for i in range(diff+1):
+            data[dt.time(a+i)] = [k2c(response["hourly"][a+i]["temp"]),
+                                  k2c(response["hourly"][a+i]["feels_like"]),
+                                  str(response["hourly"][a+i]["humidity"]) + "%"]
+
+        if temperatureUnit == "Fahrenheit":
+            for i in range(diff+1):
+                data[dt.time(a + i)] = [str(int(c2f(data[dt.time(a + i)][0]))) + "°F",
+                                        str(int(c2f(data[dt.time(a + i)][1]))) + "°F",
+                                        data[dt.time(a + i)][2]]
+        else:
+            for i in range(diff+1):
+                data[dt.time(a + i)] = [str(int(data[dt.time(a + i)][0])) + "°C",
+                                        str(int(data[dt.time(a + i)][1])) + "°C",
+                                        data[dt.time(a + i)][2]]
+
+        df = pd.DataFrame(data, index=['Temperature', 'Feels Like', 'Humidity'])
+        st.dataframe(df)
+
     map_creator(lat, lon)
+
